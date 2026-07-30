@@ -1,0 +1,44 @@
+import numpy as np
+
+input_file = "parsed_block_data.txt"
+output_file = "block_data.npy"
+
+# 存储所有方块数据
+blocks = []
+
+# 解析文本文件
+with open(input_file, "r", encoding="utf-8") as f:
+    for line in f:
+        # 移除不必要字符并解析
+        line = line.strip()
+        if not line:
+            print("Empty line, skipping")
+            continue
+
+        # 匹配(x, y, z, (block_type, subtype, [attr_vector]))结构
+        parts = eval(line)
+        x, y, z, (block_type, subtype, attr_vector) = parts
+
+        # 存储方块数据：[x, y, z, block_type, subtype, attr_vector...]
+        blocks.append([x, y, z, block_type, subtype] + attr_vector)
+
+# 转换为NumPy数组
+blocks = np.array(blocks, dtype=np.int32)
+
+# 获取坐标范围，确定建筑尺寸(W, H, D)
+max_x = blocks[:, 0].max()
+max_y = blocks[:, 1].max()
+max_z = blocks[:, 2].max()
+
+# 创建(W, H, D, C)格式的4D数组
+# 这里C=7：[block_type, subtype, attr_1, attr_2, attr_3, attr_4, attr_5]
+structure = np.full((max_x + 1, max_y + 1, max_z + 1, 7), -1, dtype=np.int32)
+
+# 填充数据
+for x, y, z, block_type, subtype, *attr_vector in blocks:
+    structure[x, y, z] = [block_type, subtype] + attr_vector
+
+# 保存为 .npy 文件
+np.save(output_file, structure)
+
+print(f"数据成功保存到 {output_file}，形状为 {structure.shape}")
